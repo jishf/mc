@@ -4,6 +4,7 @@ package mc
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -96,6 +97,29 @@ func (sc *serverConn) connect() error {
 		tcpConn.SetKeepAlivePeriod(sc.config.TcpKeepAlivePeriod)
 		tcpConn.SetNoDelay(sc.config.TcpNoDelay)
 	}
+	// authenticate
+	err = sc.auth()
+	if err != nil {
+		// Error, except if the server doesn't support authentication
+		mErr := err.(*Error)
+		if mErr.Status != StatusUnknownCommand {
+			if sc.conn != nil {
+				sc.conn.Close()
+				sc.conn = nil
+			}
+			return err
+		}
+	}
+	return nil
+}
+
+func (sc *serverConn) connectTLS() error {
+	//c, err := net.DialTimeout(sc.scheme, sc.address, sc.config.ConnectionTimeout)
+	c, err := tls.Dial(sc.scheme, sc.address, nil)
+	if err != nil {
+		return wrapError(StatusNetworkError, err)
+	}
+	sc.conn = c
 	// authenticate
 	err = sc.auth()
 	if err != nil {

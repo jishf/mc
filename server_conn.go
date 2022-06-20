@@ -51,7 +51,7 @@ func newServerConn(address, scheme, username, password string, config *Config) m
 func (sc *serverConn) perform(m *msg) error {
 	// lazy connection
 	if sc.conn == nil {
-		err := sc.connect()
+		err := sc.connectTLS()
 		if err != nil {
 			return err
 		}
